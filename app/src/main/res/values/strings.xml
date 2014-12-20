@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">ListeningCam</string>
+    <string name="hello_world">Hello world!</string>
+    <string name="action_settings">Settings</string>
+    <string name="cameraSwitchLabel">Camera:</string>
+    <string name="cameraSwitchRear">Rear</string>
+    <string name="cameraSwitchFront">Front</string>
+    <string name="audioThresholdLabel">Threshold:</string>
+    <string name="audioLevelLabel">Audio Level:</string>
+    <string name="lockOrientationSwitchLabel">Screen Rotation:</string>
+    <string name="videoLengthLabel">Video Length (sec):</string>
+</resources>
