@@ -13,6 +13,7 @@ import java.util.concurrent.TimeUnit;
 import android.app.Activity;
 import android.content.Context;
 import android.content.pm.ActivityInfo;
+import android.graphics.Color;
 import android.graphics.PixelFormat;
 import android.hardware.Camera;
 import android.media.MediaPlayer;
@@ -25,6 +26,8 @@ import android.text.format.DateFormat;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
+import android.view.WindowManager;
+import android.view.animation.Animation;
 import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.ProgressBar;
@@ -69,7 +72,7 @@ public class PlayerActivity extends Activity
     // Audio stuff
     private boolean monitoring = false;
     private TextView audioLevelText;
-    private int audioMonitorDelay = 500;    // ms
+    private int audioMonitorDelay = 250;    // ms
     private Handler handler = new Handler();
     private int cnt = 0;
     private static final String aFileName = "/dev/null";
@@ -91,6 +94,9 @@ public class PlayerActivity extends Activity
         public void run() {
             //int x = Integer.parseInt(audioLevelText.getText().toString());
             //x++;
+
+            if (mediaRecorder == null)
+                return;
 
             int x = mediaRecorder.getMaxAmplitude();
             updateAudioMeter(x);
@@ -120,11 +126,67 @@ public class PlayerActivity extends Activity
         }
     };
     @Override
+    protected void onPause() {
+        super.onPause();  // Always call the superclass method first
+        // release the camera TODO
+        stopRecording();
+        stopAudio();
+    }
+
+    @Override
+    protected void onResume()
+    {
+        super.onResume();
+        prepareRecorder();
+    }
+
+    private void stopRecording()
+    {
+        if(recorder != null && isRecording)
+        {
+            recorder.stop();
+            recorder.release();
+            isRecording = false;
+            showNotRecording();
+        }
+    }
+
+    private void prepareRecorder()
+    {
+/*        mediaPlayer = new MediaPlayer();
+
+        // prepare recorder
+        if(mCamera != null)
+            mCamera = Camera.open(0);
+
+
+        mCamera.unlock();
+
+        startAudioMonitor();*/
+    }
+    private void stopAudio()
+    {
+        if(mediaRecorder != null)
+        {
+            mediaRecorder = null;
+            mCamera.release();
+        }
+        Button b = (Button) findViewById(R.id.buttonMonitorAudio);
+        if (b.getText() == monitorButtonText2)
+            b.setText(monitorButtonText);
+
+        monitoring = false;
+
+        showNotRecording();
+    }
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
         // TODO Auto-generated method stub
         super.onCreate(savedInstanceState);
         //setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_NOSENSOR | ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         setContentView(R.layout.main_layout);
+
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         ctx = this.getParent();
         activity = this.activity;
@@ -267,6 +329,8 @@ public class PlayerActivity extends Activity
                 else {
                     b.setText(monitorButtonText);
                     monitoring = false;
+                    showNotRecording();
+
                     if (recorder != null && isRecording)
                     {
                         runOnUiThread(new Runnable() {
@@ -292,10 +356,10 @@ public class PlayerActivity extends Activity
 
             }});
 
+
     }
 
-    private
-    void startCameraPreview()
+    private void startCameraPreview()
     {
         Camera.Parameters p = mCamera.getParameters();
         p.setPreviewFpsRange(15,25);
@@ -303,6 +367,11 @@ public class PlayerActivity extends Activity
         mCamera.setParameters(p);
         try {
             mCamera.setPreviewDisplay(surfaceHolder);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        try {
+            recorder.prepare();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -430,21 +499,21 @@ public class PlayerActivity extends Activity
             public void run() {
                 runOnUiThread(new Runnable() {
                     public void run() {
-                        //debugText("runOnUiThread test1");
+                    //debugText("In oneshot runnable");
+                    try {
+                        Thread.sleep(3);    // why ?
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    recorder.stop();
+                    isRecording = false;
+                    recorder.reset();
+                    recorder.release();
 
-                //debugText("In oneshot runnable");
-                try {
-                    Thread.sleep(3);    // why ?
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                recorder.stop();
-                isRecording = false;
-                recorder.reset();
-                recorder.release();
+                    showNotRecording();
 
-                //debugText("After record.stop");
-                startAudioMonitor();
+                    //debugText("After record.stop");
+                    startAudioMonitor();
                     }
                 });
 
@@ -456,6 +525,8 @@ public class PlayerActivity extends Activity
         debugText("Recording " + tempFile.getPath());
         isRecording = true;
         recorder.start();
+        // show the recording indicator
+        showRecording();
         //debugText("After record.start()");
     }
     @Override
@@ -531,6 +602,7 @@ public class PlayerActivity extends Activity
             isRecording = false;
             recorder.reset();
             recorder.release();
+            showNotRecording();
         }
         if(mediaPlayer != null) {
             mediaPlayer.reset();
@@ -538,4 +610,14 @@ public class PlayerActivity extends Activity
         }
     }
 
+    private void showRecording()
+    {
+        TextView t = (TextView) findViewById(R.id.recordingTextView);
+
+        t.setTextColor(Color.RED);
+    }
+    private void showNotRecording() {
+        TextView t = (TextView) findViewById(R.id.recordingTextView);
+        t.setTextColor(Color.DKGRAY);
+    }
 }
