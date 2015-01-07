@@ -59,6 +59,14 @@
                 android:textOn="@string/cameraSwitchFront"
                 android:singleLine="false" />
 -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="?android:attr/textAppearanceLarge"
+                    android:text="REC"
+                    android:id="@+id/recordingTextView"
+                    android:textColor="#ff9f9f9f"
+                    android:layout_gravity="right" />
             </LinearLayout>
             </LinearLayout>
 
