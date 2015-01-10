@@ -59,20 +59,30 @@
                 android:textOn="@string/cameraSwitchFront"
                 android:singleLine="false" />
 -->
-                <TextView
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:orientation="horizontal"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:textAppearance="?android:attr/textAppearanceLarge"
-                    android:text="REC"
-                    android:id="@+id/recordingTextView"
-                    android:textColor="#ff9f9f9f"
-                    android:layout_gravity="right" />
+                    >
 
-                <Switch
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/keepAwakeSwitchText"
-                    android:id="@+id/keepAwakeSwitch" />
+                    <Switch
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/keepAwakeSwitchText"
+                        android:id="@+id/keepAwakeSwitch" />
+
+                    <TextView
+                        android:layout_width="fill_parent"
+                        android:layout_height="match_parent"
+                        android:textAppearance="?android:attr/textAppearanceLarge"
+                        android:text="REC"
+                        android:id="@+id/recordingTextView"
+                        android:textColor="#ff9f9f9f"
+                        android:layout_gravity="right"
+                        android:layout_marginLeft="20dp" />
+
+
+                </LinearLayout>
             </LinearLayout>
             </LinearLayout>
 <!-- change this to a horiz layout with three verticals inside -->
