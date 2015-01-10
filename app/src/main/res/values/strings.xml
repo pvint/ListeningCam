@@ -11,4 +11,6 @@
     <string name="audioLevelLabel">Audio Level:</string>
     <string name="lockOrientationSwitchLabel">Screen Rotation:</string>
     <string name="videoLengthLabel">Video Length (sec):</string>
+    <string name="keepAwakeSwitchText">Keep Awake</string>
+    <string name="stopAfterSilenceSwitchText">Stop after silence</string>
 </resources>

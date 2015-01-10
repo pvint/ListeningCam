@@ -67,9 +67,15 @@
                     android:id="@+id/recordingTextView"
                     android:textColor="#ff9f9f9f"
                     android:layout_gravity="right" />
-            </LinearLayout>
-            </LinearLayout>
 
+                <Switch
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/keepAwakeSwitchText"
+                    android:id="@+id/keepAwakeSwitch" />
+            </LinearLayout>
+            </LinearLayout>
+<!-- change this to a horiz layout with three verticals inside -->
             <LinearLayout
                 android:orientation="horizontal"
                 android:layout_width="match_parent"
@@ -179,6 +185,12 @@
                 android:id="@+id/videoLengthIntegerTextView"
                 />
             </LinearLayout>
+
+        <Switch
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/stopAfterSilenceSwitchText"
+            android:id="@+id/videoStopAfterSilence" />
 
         <TextView
             android:layout_width="match_parent"

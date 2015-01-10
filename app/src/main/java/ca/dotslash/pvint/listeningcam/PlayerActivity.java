@@ -22,6 +22,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
+import android.os.PowerManager;
 import android.text.format.DateFormat;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -54,6 +55,10 @@ public class PlayerActivity extends Activity
     private String monitorButtonText2 = "Stop monitoring";
     private final String saveDir = "ListeningCam";
 
+    private Switch keepAwakeSwitch;
+    private Switch videoStopAfterSilence;
+    private long lastNoiseTime;
+
     private int vWidth = 640;
     private int vHeight = 480;
     private int videoDuration = 1000 * 90;
@@ -80,6 +85,8 @@ public class PlayerActivity extends Activity
     private int audioThreshold = 2000;
     private int audioLevelFactor = 328;
 
+
+
     private void debugText(String t)
     {
         String n;
@@ -92,9 +99,6 @@ public class PlayerActivity extends Activity
     private Runnable audioMonitorRunnable = new Runnable() {
         @Override
         public void run() {
-            //int x = Integer.parseInt(audioLevelText.getText().toString());
-            //x++;
-
             if (mediaRecorder == null)
                 return;
 
@@ -104,14 +108,13 @@ public class PlayerActivity extends Activity
             // check if threshold is exceeded
             if (x > audioThreshold && monitoring)
             {
-                // start recording video
-                //startVideoRecord();
-                //camcorderView.startRecording();
-// TODO: clean up audio recorder!!
+            // TODO: clean up audio recorder!!
                 mediaRecorder.stop();
                 isRecording = false;
                 mediaRecorder.reset();
                 mediaRecorder.release();
+
+                lastNoiseTime = System.currentTimeMillis();
 
                 // video playing test
                 recordVid();
@@ -125,6 +128,78 @@ public class PlayerActivity extends Activity
             }
         }
     };
+
+    private Runnable audioMeterRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (recorder == null)
+                return;
+
+            int x = recorder.getMaxAmplitude();
+            updateAudioMeter(x);
+
+            handler.postDelayed(this, audioMonitorDelay);
+            }
+    };
+
+    private Runnable silenceOneShotTask = new Runnable () {
+        @Override
+        public void run() {
+            // Checking every n seconds for silence
+            runOnUiThread(new Runnable() {
+                public void run() {
+                    int m = recorder.getMaxAmplitude();
+                    updateAudioMeter(m);
+
+                    if (m < audioThreshold)
+                    {
+                        if ((lastNoiseTime * 1000) > videoDuration)
+                        {
+                            recorder.stop();
+                            isRecording = false;
+                            recorder.reset();
+                            recorder.release();
+                            showNotRecording();
+
+                            startAudioMonitor();
+                        }
+                        else
+                        {
+                            // restart timer to check in n seconds
+                            handler.postDelayed(this, audioMonitorDelay);
+                        }
+                    }
+                }
+            });
+        }
+    };
+    // Create a task for one-shot execution for fixed duration video
+    private Runnable oneShotTask = new Runnable(){
+        @Override
+        public void run() {
+            runOnUiThread(new Runnable() {
+                public void run() {
+                    //debugText("In oneshot runnable");
+                    try {
+                        Thread.sleep(3);    // why ?
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    recorder.stop();
+                    isRecording = false;
+                    recorder.reset();
+                    recorder.release();
+
+                    showNotRecording();
+
+                    //debugText("After record.stop");
+                    startAudioMonitor();
+                }
+            });
+
+        }
+    };
+
     @Override
     protected void onPause() {
         super.onPause();  // Always call the superclass method first
@@ -186,7 +261,23 @@ public class PlayerActivity extends Activity
         //setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_NOSENSOR | ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         setContentView(R.layout.main_layout);
 
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        keepAwakeSwitch = (Switch) findViewById(R.id.keepAwakeSwitch);
+
+        if (keepAwakeSwitch.isChecked())
+            getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
+        keepAwakeSwitch.setOnCheckedChangeListener(new Switch.OnCheckedChangeListener() {
+                                                       @Override
+                                                       public void onCheckedChanged(CompoundButton buttonView,
+                                                                                    boolean isChecked) {
+                                                           if(isChecked)
+                                                               getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+                                                           else
+                                                               getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
+                                                       }
+                                                   }
+        );
 
         ctx = this.getParent();
         activity = this.activity;
@@ -197,7 +288,7 @@ public class PlayerActivity extends Activity
         audioLevelBar = (ProgressBar) findViewById(R.id.progressBar);
         setAudioLevelBar = (SeekBar) findViewById(R.id.seekBar);
         audioLevelText.setText(Integer.toString(audioThreshold));
-
+        videoStopAfterSilence = (Switch) findViewById(R.id.videoStopAfterSilence);
 
 
 /*  DEPRECATED
@@ -482,7 +573,14 @@ public class PlayerActivity extends Activity
         recorder.setVideoEncoder(MediaRecorder.VideoEncoder.DEFAULT);
         recorder.setPreviewDisplay(surfaceHolder.getSurface());
 
-        recorder.setMaxDuration(videoDuration * 2);
+        if (videoStopAfterSilence.isChecked())
+        {
+            // monitor for silence of videoDuration seconds then stop recording
+            lastNoiseTime = System.currentTimeMillis();
+        }
+        else {
+            recorder.setMaxDuration(videoDuration * 2);
+        }
 
         try {
             recorder.prepare();
@@ -493,35 +591,15 @@ public class PlayerActivity extends Activity
         sch = (ScheduledThreadPoolExecutor)
                 Executors.newScheduledThreadPool(1);
 
-        // Create a task for one-shot execution using schedule()
-        Runnable oneShotTask = new Runnable(){
-            @Override
-            public void run() {
-                runOnUiThread(new Runnable() {
-                    public void run() {
-                    //debugText("In oneshot runnable");
-                    try {
-                        Thread.sleep(3);    // why ?
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                    recorder.stop();
-                    isRecording = false;
-                    recorder.reset();
-                    recorder.release();
+        if (videoStopAfterSilence.isChecked()) {
+            ScheduledFuture<?> oneShotFuture =
+                    sch.schedule(silenceOneShotTask, audioMonitorDelay, TimeUnit.SECONDS);
+        }
+        else {
+            ScheduledFuture<?> oneShotFuture =
+                    sch.schedule(oneShotTask, videoDuration / 1000, TimeUnit.SECONDS);
+        }
 
-                    showNotRecording();
-
-                    //debugText("After record.stop");
-                    startAudioMonitor();
-                    }
-                });
-
-            }
-        };
-
-        ScheduledFuture<?> oneShotFuture =
-                sch.schedule(oneShotTask, videoDuration / 1000, TimeUnit.SECONDS);
         debugText("Recording " + tempFile.getPath());
         isRecording = true;
         recorder.start();
@@ -590,7 +668,7 @@ public class PlayerActivity extends Activity
         }
 
         mediaRecorder.start();
-        updateAudioMeter(cnt);
+        //updateAudioMeter(cnt);
 
         handler.postDelayed(audioMonitorRunnable, audioMonitorDelay);
     }
