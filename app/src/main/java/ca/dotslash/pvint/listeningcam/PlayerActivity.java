@@ -102,6 +102,14 @@ public class PlayerActivity extends Activity
         tv.setText(n + '\n' + t);
 
     }
+    private void debugTextNoReturn(String t)
+    {
+        String n;
+        TextView tv = (TextView) findViewById(R.id.debugTextView);
+        n = (String) tv.getText();
+        tv.setText(n + t);
+
+    }
     // Audio monitor
     private Runnable audioMonitorRunnable = new Runnable() {
         @Override
@@ -155,13 +163,13 @@ public class PlayerActivity extends Activity
             // Checking every n seconds for silence
             runOnUiThread(new Runnable() {
                 public void run() {
+
                     int m = recorder.getMaxAmplitude();
                     updateAudioMeter(m);
+                    long now = System.currentTimeMillis();
 
-                    if (m < audioThreshold)
-                    {
-                        if ((lastNoiseTime * 1000) > videoDuration)
-                        {
+                    if ((m < audioThreshold) && ((now - lastNoiseTime)  > videoDuration)) {
+
                             recorder.stop();
                             isRecording = false;
                             recorder.reset();
@@ -169,13 +177,17 @@ public class PlayerActivity extends Activity
                             showNotRecording();
 
                             startAudioMonitor();
-                        }
-                        else
-                        {
-                            // restart timer to check in n seconds
-                            handler.postDelayed(this, audioMonitorDelay);
-                        }
+
                     }
+                    else
+                    {
+                        // restart timer to check in n seconds
+                        if(m >= audioThreshold)
+                            lastNoiseTime = System.currentTimeMillis();
+                        //debugTextNoReturn(Long.toString(lastNoiseTime - now) + ".");
+                        handler.postDelayed(this, audioMonitorDelay);
+                    }
+
                 }
             });
         }
@@ -332,10 +344,10 @@ public class PlayerActivity extends Activity
         recordImage.setBackgroundResource(R.drawable.cameraidle);
 
 
-        recordImage.setBackgroundResource(R.drawable.recording_animation);
-        recordAnimation = (AnimationDrawable) recordImage.getBackground();
-
-        recordAnimation.start();
+//        recordImage.setBackgroundResource(R.drawable.recording_animation);
+//        recordAnimation = (AnimationDrawable) recordImage.getBackground();
+//
+//        recordAnimation.start();
 
         getWindow().setFormat(PixelFormat.UNKNOWN);
         surfaceView = (SurfaceView) findViewById(R.id.surfaceview);
@@ -637,7 +649,7 @@ public class PlayerActivity extends Activity
 
         if (videoStopAfterSilence.isChecked()) {
             ScheduledFuture<?> oneShotFuture =
-                    sch.schedule(silenceOneShotTask, audioMonitorDelay, TimeUnit.SECONDS);
+                    sch.schedule(silenceOneShotTask, audioMonitorDelay, TimeUnit.MILLISECONDS);
         }
         else {
             ScheduledFuture<?> oneShotFuture =
