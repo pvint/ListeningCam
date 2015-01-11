@@ -71,6 +71,16 @@
                         android:text="@string/keepAwakeSwitchText"
                         android:id="@+id/keepAwakeSwitch" />
 
+                    <ImageView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:id="@+id/microphoneAnimationImageView" />
+
+                    <ImageView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:id="@+id/recordAnimationImageView" />
+
                     <TextView
                         android:layout_width="fill_parent"
                         android:layout_height="match_parent"
@@ -80,6 +90,8 @@
                         android:textColor="#ff9f9f9f"
                         android:layout_gravity="right"
                         android:layout_marginLeft="20dp" />
+
+
 
 
                 </LinearLayout>

@@ -15,6 +15,7 @@ import android.content.Context;
 import android.content.pm.ActivityInfo;
 import android.graphics.Color;
 import android.graphics.PixelFormat;
+import android.graphics.drawable.AnimationDrawable;
 import android.hardware.Camera;
 import android.media.MediaPlayer;
 import android.media.MediaRecorder;
@@ -31,6 +32,7 @@ import android.view.WindowManager;
 import android.view.animation.Animation;
 import android.widget.Button;
 import android.widget.CompoundButton;
+import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.SeekBar;
 import android.widget.Switch;
@@ -63,6 +65,7 @@ public class PlayerActivity extends Activity
     private int vHeight = 480;
     private int videoDuration = 1000 * 90;
     private boolean isRecording = false;
+    private boolean firstRun = true;
 
     private ProgressBar audioLevelBar;
     private SeekBar videoLengthBar;
@@ -85,6 +88,10 @@ public class PlayerActivity extends Activity
     private int audioThreshold = 2000;
     private int audioLevelFactor = 328;
 
+    private AnimationDrawable microphoneAnimation;
+    private ImageView microphoneImage;
+    private AnimationDrawable recordAnimation;
+    private ImageView recordImage;
 
 
     private void debugText(String t)
@@ -318,6 +325,18 @@ public class PlayerActivity extends Activity
 
         //startAudioMonitor();
 
+        // Prepare the recording animations
+        microphoneImage = (ImageView) findViewById(R.id.microphoneAnimationImageView);
+        microphoneImage.setBackgroundResource(R.drawable.microphoneidle);
+        recordImage = (ImageView) findViewById(R.id.recordAnimationImageView);
+        recordImage.setBackgroundResource(R.drawable.cameraidle);
+
+
+        recordImage.setBackgroundResource(R.drawable.recording_animation);
+        recordAnimation = (AnimationDrawable) recordImage.getBackground();
+
+        recordAnimation.start();
+
         getWindow().setFormat(PixelFormat.UNKNOWN);
         surfaceView = (SurfaceView) findViewById(R.id.surfaceview);
         surfaceHolder = surfaceView.getHolder();
@@ -327,8 +346,8 @@ public class PlayerActivity extends Activity
         mediaPlayer = new MediaPlayer();
 
         // prepare recorder
-        mCamera = Camera.open(0);
 
+        mCamera = Camera.open(0);
         // FIXME Not working!!  startCameraPreview();
 
         /*try {
@@ -339,6 +358,8 @@ public class PlayerActivity extends Activity
         //initRecorder();
         mCamera.unlock();
 
+        // start preview
+        //recordVid();
         startAudioMonitor();
 
 
@@ -416,11 +437,19 @@ public class PlayerActivity extends Activity
                     b.setText(monitorButtonText2);
                     monitoring = true;
 
+                    // show the flashing icon
+
+                    microphoneImage.setBackgroundResource(R.drawable.microphone_animation);
+                    microphoneAnimation = (AnimationDrawable) microphoneImage.getBackground();
+
+                    microphoneAnimation.start();
+
                 }
                 else {
                     b.setText(monitorButtonText);
                     monitoring = false;
                     showNotRecording();
+
 
                     if (recorder != null && isRecording)
                     {
@@ -573,6 +602,21 @@ public class PlayerActivity extends Activity
         recorder.setVideoEncoder(MediaRecorder.VideoEncoder.DEFAULT);
         recorder.setPreviewDisplay(surfaceHolder.getSurface());
 
+
+        if (firstRun && false) // FIXME this isn't working yet
+        {
+            firstRun = false;
+            try {
+                recorder.prepare();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            recorder.start();
+            //recorder.stop();
+
+            return;
+        }
         if (videoStopAfterSilence.isChecked())
         {
             // monitor for silence of videoDuration seconds then stop recording
@@ -599,6 +643,12 @@ public class PlayerActivity extends Activity
             ScheduledFuture<?> oneShotFuture =
                     sch.schedule(oneShotTask, videoDuration / 1000, TimeUnit.SECONDS);
         }
+
+        ImageView recordImage = (ImageView) findViewById(R.id.recordAnimationImageView);
+        recordImage.setBackgroundResource(R.drawable.recording_animation);
+        recordAnimation = (AnimationDrawable) recordImage.getBackground();
+
+        recordAnimation.start();
 
         debugText("Recording " + tempFile.getPath());
         isRecording = true;
@@ -670,6 +720,7 @@ public class PlayerActivity extends Activity
         mediaRecorder.start();
         //updateAudioMeter(cnt);
 
+
         handler.postDelayed(audioMonitorRunnable, audioMonitorDelay);
     }
     private void stopAudioMonitor()
@@ -693,9 +744,21 @@ public class PlayerActivity extends Activity
         TextView t = (TextView) findViewById(R.id.recordingTextView);
 
         t.setTextColor(Color.RED);
+
+
     }
     private void showNotRecording() {
         TextView t = (TextView) findViewById(R.id.recordingTextView);
         t.setTextColor(Color.DKGRAY);
+
+        recordAnimation.stop();
+        ImageView recordImage = (ImageView) findViewById(R.id.recordAnimationImageView);
+        recordImage.setBackgroundResource(R.drawable.cameraidle);
+
+        // stop the flashing icon
+        microphoneAnimation.stop(); // FIXME need to reset to grey
+
+        ImageView microphoneImage = (ImageView) findViewById(R.id.microphoneAnimationImageView);
+        microphoneImage.setBackgroundResource(R.drawable.microphoneidle);
     }
 }
