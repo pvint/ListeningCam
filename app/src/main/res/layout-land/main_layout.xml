@@ -15,7 +15,7 @@
             android:layout_height="fill_parent"
             android:layout_weight="1"
             android:layout_margin="10dp"
-            />
+             />
 
 
         </LinearLayout>
@@ -35,12 +35,10 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Monitor Audio"
-                android:id="@+id/buttonMonitorAudio" />
+                android:id="@+id/buttonMonitorAudio"
+                android:background="@android:color/holo_blue_light" />
 
-            <LinearLayout
-                android:layout_width="fill_parent"
-                android:layout_height="match_parent"
-                android:orientation="vertical">
+
 
 
         <!--        <TextView
@@ -63,39 +61,33 @@
                     android:orientation="horizontal"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    >
+                    android:gravity="right">
 
-                    <Switch
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/keepAwakeSwitchText"
-                        android:id="@+id/keepAwakeSwitch" />
 
                     <ImageView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:id="@+id/microphoneAnimationImageView" />
 
+
                     <ImageView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:id="@+id/recordAnimationImageView" />
 
-                    <TextView
-                        android:layout_width="fill_parent"
-                        android:layout_height="match_parent"
-                        android:textAppearance="?android:attr/textAppearanceLarge"
-                        android:text="REC"
-                        android:id="@+id/recordingTextView"
-                        android:textColor="#ff9f9f9f"
-                        android:layout_gravity="right"
-                        android:layout_marginLeft="20dp" />
 
 
 
 
-                </LinearLayout>
+
+
+
+
+
+
+
             </LinearLayout>
+
             </LinearLayout>
 <!-- change this to a horiz layout with three verticals inside -->
             <LinearLayout
@@ -140,6 +132,8 @@
                 android:layout_gravity="center_horizontal"
                 android:layout_marginTop="10dp">
 
+
+
                 <TextView
                     android:layout_width="80dp"
                     android:layout_height="wrap_content"
@@ -173,13 +167,35 @@
             android:layout_gravity="center_horizontal" />
 -->
 
+        <CheckBox
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="5dp"
+            android:text="@string/recordUntilSilenceLabel"
+            android:id="@+id/recordUntilSilentCheckBox" />
 
+        <CheckBox
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/keepAwakeSwitchText"
+            android:id="@+id/keepAwakeCheckBox" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="18dp"
+            android:textAppearance="?android:attr/textAppearanceSmall"
+            android:text="@string/recordUntilSilenceHint"
+            android:id="@+id/textView"
+            android:textStyle="italic" />
 
         <LinearLayout
             android:orientation="horizontal"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp">
+
+
 
             <TextView
                 android:layout_width="wrap_content"
@@ -208,11 +224,7 @@
                 />
             </LinearLayout>
 
-        <Switch
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/stopAfterSilenceSwitchText"
-            android:id="@+id/videoStopAfterSilence" />
+
 
         <TextView
             android:layout_width="match_parent"

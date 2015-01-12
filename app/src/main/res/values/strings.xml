@@ -2,15 +2,16 @@
 <resources>
 
     <string name="app_name">ListeningCam</string>
-    <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
     <string name="cameraSwitchLabel">Camera:</string>
     <string name="cameraSwitchRear">Rear</string>
     <string name="cameraSwitchFront">Front</string>
-    <string name="audioThresholdLabel">Threshold:</string>
-    <string name="audioLevelLabel">Audio Level:</string>
+    <string name="audioThresholdLabel">Recording threshold:</string>
+    <string name="audioLevelLabel">Current level:</string>
     <string name="lockOrientationSwitchLabel">Screen Rotation:</string>
     <string name="videoLengthLabel">Video Length (sec):</string>
-    <string name="keepAwakeSwitchText">Keep Awake</string>
-    <string name="stopAfterSilenceSwitchText">Stop after silence</string>
+    <string name="keepAwakeSwitchText">Keep Device Awake</string>
+    <string name="stopAfterSilenceSwitchText">Record while noises are heard:</string>
+    <string name="recordUntilSilenceLabel">Record fixed length video</string>
+    <string name="recordUntilSilenceHint"> (when unchecked videos will record until there has been silence for the selected amount of time)</string>
 </resources>

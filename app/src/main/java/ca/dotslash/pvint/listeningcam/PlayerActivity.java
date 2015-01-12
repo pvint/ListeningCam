@@ -31,7 +31,9 @@ import android.view.View;
 import android.view.WindowManager;
 import android.view.animation.Animation;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.CompoundButton;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.SeekBar;
@@ -51,19 +53,22 @@ public class PlayerActivity extends Activity
     Camera mCamera;
 
     private int cameraSelectedNumber = 0;
+    private int numCameras;
+    private int activeCamera = 0;
+
     boolean pausing = false;
     private String videoFilePrefix = "LCam_";
-    private String monitorButtonText = "Monitor audio";
-    private String monitorButtonText2 = "Stop monitoring";
+    private String monitorButtonText = "Start!";
+    private String monitorButtonText2 = "Stop!";
     private final String saveDir = "ListeningCam";
 
-    private Switch keepAwakeSwitch;
-    private Switch videoStopAfterSilence;
+    private CheckBox keepAwake;
+    private CheckBox recordFixedLengthSwitch;
     private long lastNoiseTime;
 
     private int vWidth = 640;
     private int vHeight = 480;
-    private int videoDuration = 1000 * 90;
+    private int videoDuration = 1000 * 60;
     private boolean isRecording = false;
     private boolean firstRun = true;
 
@@ -72,6 +77,7 @@ public class PlayerActivity extends Activity
     private TextView videoLengthTextView;
     private SeekBar setAudioLevelBar;
     private TextView getAudioLevelText;
+    private ImageButton switchCameraButton;
 
     private Context ctx;
     private Activity activity;
@@ -80,12 +86,12 @@ public class PlayerActivity extends Activity
     // Audio stuff
     private boolean monitoring = false;
     private TextView audioLevelText;
-    private int audioMonitorDelay = 250;    // ms
+    private int audioMonitorDelay = 100;    // ms
     private Handler handler = new Handler();
     private int cnt = 0;
     private static final String aFileName = "/dev/null";
     private MediaRecorder mediaRecorder = null;
-    private int audioThreshold = 2000;
+    private int audioThreshold = 4000;
     private int audioLevelFactor = 328;
 
     private AnimationDrawable microphoneAnimation;
@@ -280,12 +286,12 @@ public class PlayerActivity extends Activity
         //setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_NOSENSOR | ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         setContentView(R.layout.main_layout);
 
-        keepAwakeSwitch = (Switch) findViewById(R.id.keepAwakeSwitch);
+        keepAwake = (CheckBox) findViewById(R.id.keepAwakeCheckBox);
 
-        if (keepAwakeSwitch.isChecked())
+        if (keepAwake.isChecked())
             getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
-        keepAwakeSwitch.setOnCheckedChangeListener(new Switch.OnCheckedChangeListener() {
+        keepAwake.setOnCheckedChangeListener(new Switch.OnCheckedChangeListener() {
                                                        @Override
                                                        public void onCheckedChanged(CompoundButton buttonView,
                                                                                     boolean isChecked) {
@@ -307,7 +313,8 @@ public class PlayerActivity extends Activity
         audioLevelBar = (ProgressBar) findViewById(R.id.progressBar);
         setAudioLevelBar = (SeekBar) findViewById(R.id.seekBar);
         audioLevelText.setText(Integer.toString(audioThreshold));
-        videoStopAfterSilence = (Switch) findViewById(R.id.videoStopAfterSilence);
+
+        recordFixedLengthSwitch = (CheckBox) findViewById(R.id.recordUntilSilentCheckBox);
 
 
 /*  DEPRECATED
@@ -335,6 +342,8 @@ public class PlayerActivity extends Activity
         Switch lockOrientationSwitch = (Switch) findViewById(R.id.lockOrientationSwitch);
         Switch changeCameraSwitch = (Switch) findViewById(R.id.changeCameraSwitch);
 
+        //switchCameraButton = (ImageButton) findViewById(R.id.switchCameraButton);
+
         //startAudioMonitor();
 
         // Prepare the recording animations
@@ -359,7 +368,15 @@ public class PlayerActivity extends Activity
 
         // prepare recorder
 
+
         mCamera = Camera.open(0);
+        mCamera.lock();
+        // Note: must be called when camera is locked
+        Camera.Parameters cp = mCamera.getParameters();
+
+        mCamera.unlock();
+        numCameras = mCamera.getNumberOfCameras();
+
         // FIXME Not working!!  startCameraPreview();
 
         /*try {
@@ -368,7 +385,6 @@ public class PlayerActivity extends Activity
             e.printStackTrace();
         }*/
         //initRecorder();
-        mCamera.unlock();
 
         // start preview
         //recordVid();
@@ -438,6 +454,19 @@ public class PlayerActivity extends Activity
 
                         }
                     });
+
+/*        switchCameraButton.setOnClickListener(new Button.OnClickListener(){
+            @Override
+            public void onClick(View arg0) {
+                // TODO Switching Camera may need some work when recording!
+                if (numCameras > 0)
+                {
+                    activeCamera = 1 - activeCamera;
+//                    mCamera.open(activeCamera);
+                }
+
+            }
+        });*/
 
         buttonMonitorAudio.setOnClickListener(new Button.OnClickListener(){
 
@@ -629,7 +658,7 @@ public class PlayerActivity extends Activity
 
             return;
         }
-        if (videoStopAfterSilence.isChecked())
+        if (!recordFixedLengthSwitch.isChecked())
         {
             // monitor for silence of videoDuration seconds then stop recording
             lastNoiseTime = System.currentTimeMillis();
@@ -647,7 +676,7 @@ public class PlayerActivity extends Activity
         sch = (ScheduledThreadPoolExecutor)
                 Executors.newScheduledThreadPool(1);
 
-        if (videoStopAfterSilence.isChecked()) {
+        if (!recordFixedLengthSwitch.isChecked()) {
             ScheduledFuture<?> oneShotFuture =
                     sch.schedule(silenceOneShotTask, audioMonitorDelay, TimeUnit.MILLISECONDS);
         }
@@ -753,22 +782,25 @@ public class PlayerActivity extends Activity
 
     private void showRecording()
     {
-        TextView t = (TextView) findViewById(R.id.recordingTextView);
-
-        t.setTextColor(Color.RED);
+        // deprecated
+//        TextView t = (TextView) findViewById(R.id.recordingTextView);
+//        t.setTextColor(Color.RED);
 
 
     }
     private void showNotRecording() {
-        TextView t = (TextView) findViewById(R.id.recordingTextView);
-        t.setTextColor(Color.DKGRAY);
+//        TextView t = (TextView) findViewById(R.id.recordingTextView);
+//        t.setTextColor(Color.DKGRAY);
 
-        recordAnimation.stop();
+        if(recordAnimation != null)
+            recordAnimation.stop();
         ImageView recordImage = (ImageView) findViewById(R.id.recordAnimationImageView);
         recordImage.setBackgroundResource(R.drawable.cameraidle);
 
         // stop the flashing icon
-        microphoneAnimation.stop(); // FIXME need to reset to grey
+        if (microphoneAnimation != null) {
+            microphoneAnimation.stop(); // FIXME need to reset to grey
+        }
 
         ImageView microphoneImage = (ImageView) findViewById(R.id.microphoneAnimationImageView);
         microphoneImage.setBackgroundResource(R.drawable.microphoneidle);
