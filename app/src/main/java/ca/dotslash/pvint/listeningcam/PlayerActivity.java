@@ -23,6 +23,7 @@ import android.os.Environment;
 import android.os.Handler;
 
 import android.text.format.DateFormat;
+import android.text.method.ScrollingMovementMethod;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
@@ -35,6 +36,7 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
+import android.widget.ScrollView;
 import android.widget.SeekBar;
 import android.widget.Switch;
 import android.widget.TextView;
@@ -65,8 +67,8 @@ public class PlayerActivity extends Activity
     private CheckBox recordFixedLengthSwitch;
     private long lastNoiseTime;
 
-    private int videoWidth = 352;
-    private int videoHeight = 288;
+    private int videoWidth = 640;
+    private int videoHeight = 480;
 
     private int vWidth = 640;
     private int vHeight = 480;
@@ -323,7 +325,7 @@ public class PlayerActivity extends Activity
 
         // Important: Call startPreview() to start updating the preview
         // surface. Preview must be started before you can take a picture.
-        debugText(Integer.toString(vWidth) + "x" + Integer.toString(vHeight));
+        //debugText(Integer.toString(vWidth) + "x" + Integer.toString(vHeight));
 
 /*
         try {
@@ -404,6 +406,12 @@ public class PlayerActivity extends Activity
         getAudioLevelText = (TextView) findViewById(R.id.audioThresholdTextView);
         getAudioLevelText.setText(Integer.toString(audioThreshold / audioLevelFactor));
         setAudioLevelBar.setProgress(audioThreshold / audioLevelFactor);
+
+
+/*
+        TextView d = (TextView) findViewById(R.id.debugTextView);
+        d.setMovementMethod(new ScrollingMovementMethod());
+*/
 
         //videoLengthTextView = (TextView) findViewById(R.id.videoLengthIntegerTextView);
         //videoLengthBar = (SeekBar) findViewById(R.id.videoLengthSeekbar);
@@ -541,6 +549,7 @@ public class PlayerActivity extends Activity
                     //startAudioMonitor();
                     b.setText(monitorButtonText2);
                     monitoring = true;
+                    b.setBackgroundColor(0xffff0000);
 
                     // show the flashing icon
 
@@ -554,7 +563,7 @@ public class PlayerActivity extends Activity
                     b.setText(monitorButtonText);
                     monitoring = false;
                     showNotRecording();
-
+                    b.setBackgroundColor(0xff00ff00);
 
                     if (recorder != null && isRecording)
                     {
@@ -662,8 +671,8 @@ public class PlayerActivity extends Activity
 
         videoDuration = 1000 * Integer.parseInt(videoLengthEditText.getText().toString());
 
-        if (videoDuration < 10000)
-            videoDuration = 10000;
+        if (videoDuration < 1000)
+            videoDuration = 1000;
 
         mCamera.lock();
 
@@ -759,7 +768,7 @@ public class PlayerActivity extends Activity
 
         recordAnimation.start();
 
-        debugText("Recording " + tempFile.getPath());
+        debugText("Recording " + f);
         isRecording = true;
         recorder.start();
         // show the recording indicator

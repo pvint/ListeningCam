@@ -36,7 +36,9 @@
                 android:layout_height="wrap_content"
                 android:text="Monitor Audio"
                 android:id="@+id/buttonMonitorAudio"
-                android:background="@android:color/holo_blue_light" />
+                android:background="#ff00ff00"
+                android:textColor="#ff000000"
+                android:textStyle="bold" />
 
 
 
@@ -218,16 +220,24 @@
 
         </LinearLayout>
 
-
-        <TextView
+        <ScrollView
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:textAppearance="?android:attr/textAppearanceSmall"
-            android:text=""
-            android:maxLines = "8"
-            android:scrollbars = "vertical"
-            android:id="@+id/debugTextView"
-            android:layout_gravity="center_horizontal" />
+            android:id="@+id/scrollView" >
 
-        </LinearLayout>
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:textAppearance="?android:attr/textAppearanceSmall"
+                android:text=""
+
+                android:ellipsize="end"
+
+                android:scrollbars = "vertical"
+                android:id="@+id/debugTextView"
+                android:layout_gravity="center_horizontal" />
+
+        </ScrollView>
+
+    </LinearLayout>
     </LinearLayout>
