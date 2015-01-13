@@ -2,9 +2,8 @@ package ca.dotslash.pvint.listeningcam;
 
 import java.io.File;
 import java.io.IOException;
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.Date;
+
+import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -12,8 +11,7 @@ import java.util.concurrent.TimeUnit;
 
 import android.app.Activity;
 import android.content.Context;
-import android.content.pm.ActivityInfo;
-import android.graphics.Color;
+
 import android.graphics.PixelFormat;
 import android.graphics.drawable.AnimationDrawable;
 import android.hardware.Camera;
@@ -23,23 +21,24 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
-import android.os.PowerManager;
+
 import android.text.format.DateFormat;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.WindowManager;
-import android.view.animation.Animation;
+
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
+import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.SeekBar;
 import android.widget.Switch;
 import android.widget.TextView;
-import android.media.AudioManager;
+
 
 public class PlayerActivity extends Activity
         implements SurfaceHolder.Callback {
@@ -66,6 +65,9 @@ public class PlayerActivity extends Activity
     private CheckBox recordFixedLengthSwitch;
     private long lastNoiseTime;
 
+    private int videoWidth = 352;
+    private int videoHeight = 288;
+
     private int vWidth = 640;
     private int vHeight = 480;
     private int videoDuration = 1000 * 60;
@@ -74,6 +76,7 @@ public class PlayerActivity extends Activity
 
     private ProgressBar audioLevelBar;
     private SeekBar videoLengthBar;
+    private EditText videoLengthEditText;
     private TextView videoLengthTextView;
     private SeekBar setAudioLevelBar;
     private TextView getAudioLevelText;
@@ -279,6 +282,75 @@ public class PlayerActivity extends Activity
 
         showNotRecording();
     }
+
+    private int openCamera()
+    {
+        mCamera = Camera.open(0);
+        mCamera.lock();
+        // Note: must be called when camera is locked
+        Camera.Parameters cp = mCamera.getParameters();
+
+        mCamera.unlock();
+        numCameras = mCamera.getNumberOfCameras();
+
+        //List<Camera.Size> localSizes = mCamera.getParameters().getSupportedPreviewSizes();
+        //mSupportedPreviewSizes = localSizes;
+        //requestLayout();
+
+
+        int w = cp.getPreviewSize().width;
+        int h = cp.getPreviewSize().height;
+        //debugText(Integer.toString(w) + "x" + Integer.toString(h));
+
+        int r = w/h;
+        vWidth = surfaceView.getWidth();
+        vHeight = vWidth / r;
+
+        if (vHeight > surfaceView.getHeight())
+        {
+            vHeight = surfaceView.getHeight();
+            vWidth = vHeight * r;
+        }
+
+        if(w>vWidth || h>vHeight)
+        {
+            cp.setPreviewSize(vWidth,vHeight);
+        }
+
+
+        //m.setText(Integer.toString(vWidth) + "x" + Integer.toString(vHeight));
+        surfaceHolder.setFixedSize(vWidth, vHeight);
+
+        // Important: Call startPreview() to start updating the preview
+        // surface. Preview must be started before you can take a picture.
+        debugText(Integer.toString(vWidth) + "x" + Integer.toString(vHeight));
+
+/*
+        try {
+            mCamera.setPreviewDisplay(surfaceHolder);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+*/
+
+        try {
+            mCamera.startPreview();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return 0;
+    }
+    private void prepareSurface()
+    {
+        getWindow().setFormat(PixelFormat.UNKNOWN);
+        surfaceView = (SurfaceView) findViewById(R.id.surfaceview);
+        surfaceHolder = surfaceView.getHolder();
+        surfaceHolder.addCallback(this);
+        surfaceHolder.setFixedSize(videoWidth, videoHeight);
+        surfaceHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
+        mediaPlayer = new MediaPlayer();
+    }
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         // TODO Auto-generated method stub
@@ -333,11 +405,14 @@ public class PlayerActivity extends Activity
         getAudioLevelText.setText(Integer.toString(audioThreshold / audioLevelFactor));
         setAudioLevelBar.setProgress(audioThreshold / audioLevelFactor);
 
-        videoLengthTextView = (TextView) findViewById(R.id.videoLengthIntegerTextView);
-        videoLengthBar = (SeekBar) findViewById(R.id.videoLengthSeekbar);
+        //videoLengthTextView = (TextView) findViewById(R.id.videoLengthIntegerTextView);
+        //videoLengthBar = (SeekBar) findViewById(R.id.videoLengthSeekbar);
 
-        videoLengthBar.setProgress(videoDuration / 1000);
-        videoLengthTextView.setText(Integer.toString(videoDuration / 1000));
+        //videoLengthBar.setProgress(videoDuration / 1000);
+        //videoLengthTextView.setText(Integer.toString(videoDuration / 1000));
+
+        videoLengthEditText = (EditText) findViewById(R.id.videoLengthEditText);
+        videoLengthEditText.setText(Integer.toString(videoDuration / 1000));
 
         Switch lockOrientationSwitch = (Switch) findViewById(R.id.lockOrientationSwitch);
         Switch changeCameraSwitch = (Switch) findViewById(R.id.changeCameraSwitch);
@@ -358,24 +433,12 @@ public class PlayerActivity extends Activity
 //
 //        recordAnimation.start();
 
-        getWindow().setFormat(PixelFormat.UNKNOWN);
-        surfaceView = (SurfaceView) findViewById(R.id.surfaceview);
-        surfaceHolder = surfaceView.getHolder();
-        surfaceHolder.addCallback(this);
-        surfaceHolder.setFixedSize(176, 144);
-        surfaceHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
-        mediaPlayer = new MediaPlayer();
+
 
         // prepare recorder
 
-
-        mCamera = Camera.open(0);
-        mCamera.lock();
-        // Note: must be called when camera is locked
-        Camera.Parameters cp = mCamera.getParameters();
-
-        mCamera.unlock();
-        numCameras = mCamera.getNumberOfCameras();
+        prepareSurface();
+        openCamera();
 
         // FIXME Not working!!  startCameraPreview();
 
@@ -420,7 +483,8 @@ public class PlayerActivity extends Activity
 
         });*/
 
-        videoLengthBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+
+        /*videoLengthBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                 videoDuration = seekBar.getProgress() * 1000;
@@ -436,7 +500,7 @@ public class PlayerActivity extends Activity
             public void onStopTrackingTouch(SeekBar seekBar) {
 
             }
-        });
+        });*/
         setAudioLevelBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
                         @Override
                         public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
@@ -596,6 +660,11 @@ public class PlayerActivity extends Activity
     {
         recorder = new MediaRecorder();
 
+        videoDuration = 1000 * Integer.parseInt(videoLengthEditText.getText().toString());
+
+        if (videoDuration < 10000)
+            videoDuration = 10000;
+
         mCamera.lock();
 
         // Note: must be called when camera is locked
@@ -619,8 +688,7 @@ public class PlayerActivity extends Activity
         Boolean nf = new File(Environment.getExternalStorageDirectory(), "/" + saveDir).mkdir();
         File tempFile = new File(Environment.getExternalStorageDirectory(), "/" + saveDir + "/" + f);
 
-        // TESTING
-        TextView m = (TextView) findViewById(R.id.mediauri);
+
         int w = cp.getPreviewSize().width;
         int h = cp.getPreviewSize().height;
 
@@ -635,10 +703,10 @@ public class PlayerActivity extends Activity
         }
 
         //m.setText(Integer.toString(vWidth) + "x" + Integer.toString(vHeight));
-        surfaceHolder.setFixedSize(vWidth, vHeight);
+        surfaceHolder.setFixedSize(videoWidth, videoHeight);  // FIXME
         recorder.setOutputFile(tempFile.getPath());
         recorder.setVideoFrameRate(25);
-        //recorder.setVideoSize(vWidth, vHeight);
+        recorder.setVideoSize(videoWidth, videoHeight);
         recorder.setAudioEncoder(MediaRecorder.AudioEncoder.DEFAULT);
         recorder.setVideoEncoder(MediaRecorder.VideoEncoder.DEFAULT);
         recorder.setPreviewDisplay(surfaceHolder.getSurface());

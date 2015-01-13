@@ -14,9 +14,13 @@
         android:hardwareAccelerated="true"
 
         android:theme="@style/AppTheme" >
+
+        <!-- Prevent soft keypad popup for EditText input by adding:
+            android:windowSoftInputMode="stateHidden" -->
         <activity
             android:name="ca.dotslash.pvint.listeningcam.PlayerActivity"
             android:screenOrientation="landscape"
+            android:windowSoftInputMode="stateHidden"
             android:label="@string/app_name" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

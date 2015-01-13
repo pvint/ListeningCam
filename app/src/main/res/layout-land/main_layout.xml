@@ -29,7 +29,7 @@
         <LinearLayout
             android:orientation="horizontal"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="28dp">
 
             <Button
                 android:layout_width="wrap_content"
@@ -65,14 +65,14 @@
 
 
                     <ImageView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
                         android:id="@+id/microphoneAnimationImageView" />
 
 
                     <ImageView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
                         android:id="@+id/recordAnimationImageView" />
 
 
@@ -129,8 +129,7 @@
                 android:orientation="horizontal"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center_horizontal"
-                android:layout_marginTop="10dp">
+                android:layout_gravity="center_horizontal">
 
 
 
@@ -170,15 +169,17 @@
         <CheckBox
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="5dp"
-            android:text="@string/recordUntilSilenceLabel"
-            android:id="@+id/recordUntilSilentCheckBox" />
+            android:text="@string/keepAwakeSwitchText"
+            android:id="@+id/keepAwakeCheckBox"
+            android:textSize="14dp" />
 
         <CheckBox
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/keepAwakeSwitchText"
-            android:id="@+id/keepAwakeCheckBox" />
+            android:text="@string/recordUntilSilenceLabel"
+            android:id="@+id/recordUntilSilentCheckBox"
+            android:textSize="14dp" />
+
 
         <TextView
             android:layout_width="wrap_content"
@@ -205,25 +206,17 @@
                 android:id="@+id/videoLengthTextView"
                 android:layout_marginLeft="22dp" />
 
-            <SeekBar
-                android:layout_width="match_parent"
+            <EditText
+                android:layout_width="102dp"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:id="@+id/videoLengthSeekbar"
-                android:progress="60"
-                android:layout_gravity="center_horizontal" />
+                android:inputType="number"
+                android:ems="10"
+                android:id="@+id/videoLengthEditText"
+                android:background="#ff040445"
+                android:gravity="center"
+                android:text="10" />
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_marginLeft="5dp"
-                android:layout_marginRight="5dp"
-                android:layout_height="wrap_content"
-                android:textAppearance="?android:attr/textAppearanceSmall"
-                android:text="--"
-                android:id="@+id/videoLengthIntegerTextView"
-                />
-            </LinearLayout>
-
+        </LinearLayout>
 
 
         <TextView
