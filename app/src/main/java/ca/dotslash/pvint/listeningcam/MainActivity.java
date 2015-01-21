@@ -1,61 +1,56 @@
 package ca.dotslash.pvint.listeningcam;
 
-import android.app.ListActivity;
-import android.content.Intent;
-import android.database.Cursor;
+import java.io.File;
+import java.io.IOException;
+
+import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+
+import android.app.Activity;
+import android.content.Context;
+
+import android.graphics.PixelFormat;
+import android.graphics.drawable.AnimationDrawable;
+import android.hardware.Camera;
+import android.media.MediaPlayer;
+import android.media.MediaRecorder;
 import android.net.Uri;
 import android.os.Bundle;
-import android.provider.MediaStore;
+import android.os.Environment;
+import android.os.Handler;
+
+import android.text.format.DateFormat;
+import android.text.method.ScrollingMovementMethod;
+import android.view.SurfaceHolder;
+import android.view.SurfaceView;
 import android.view.View;
-import android.widget.ListView;
-import android.widget.SimpleCursorAdapter;
-import android.widget.Toast;
+import android.view.WindowManager;
 
-public class MainActivity extends ListActivity {
+import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
+import android.widget.EditText;
+import android.widget.ImageButton;
+import android.widget.ImageView;
+import android.widget.ProgressBar;
+import android.widget.ScrollView;
+import android.widget.SeekBar;
+import android.widget.Switch;
+import android.widget.TextView;
 
-    SimpleCursorAdapter adapter;
 
-    final Uri mediaSrc = MediaStore.Video.Media.EXTERNAL_CONTENT_URI;
+public class MainActivity extends Activity {
 
-    /** Called when the activity is first created. */
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        String[] from = {
-                MediaStore.MediaColumns.TITLE};
-        int[] to = {
-                android.R.id.text1};
-
-        Cursor cursor = managedQuery(
-                mediaSrc,
-                null,
-                null,
-                null,
-                MediaStore.Audio.Media.TITLE);
-
-        adapter = new SimpleCursorAdapter(this,
-                android.R.layout.simple_list_item_1, cursor, from, to);
-        setListAdapter(adapter);
     }
 
-    @Override
-    protected void onListItemClick(ListView l, View v, int position, long id) {
-        Cursor cursor = adapter.getCursor();
-        cursor.moveToPosition(position);
-
-        String _id = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media._ID));
-
-        Uri playableUri
-                = Uri.withAppendedPath(mediaSrc, _id);
-
-        Toast.makeText(this, "Play: " + playableUri.toString(), Toast.LENGTH_LONG).show();
-
-        Intent intent = new Intent();
-        intent.setClass(MainActivity.this,
-                PlayerActivity.class);
-        intent.setData(playableUri);
-        startActivity(intent);
-    }
 
 
 }
