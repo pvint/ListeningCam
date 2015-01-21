@@ -3,6 +3,7 @@ package ca.dotslash.pvint.listeningcam;
 import java.io.File;
 import java.io.IOException;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledFuture;
@@ -285,6 +286,46 @@ public class PlayerActivity extends Activity
         showNotRecording();
     }
 
+    public static Camera.Size getOptimalPreviewSize(List<Camera.Size> sizes, int screenWidth, int screenHeight) {
+        double epsilon = 0.17;
+        double aspectRatio = ((double)screenWidth)/screenHeight;
+        Camera.Size optimalSize = null;
+        for (Iterator<Camera.Size> iterator = sizes.iterator(); iterator.hasNext();) {
+            Camera.Size currSize =  iterator.next();
+            double curAspectRatio = ((double)currSize.width)/currSize.height;
+            //do the aspect ratios equal?
+            if ( Math.abs( aspectRatio - curAspectRatio ) < epsilon ) {
+                //they do
+                if(optimalSize!=null) {
+                    //is the current size smaller than the one before
+                    if(optimalSize.height>currSize.height && optimalSize.width>currSize.width) {
+                        optimalSize = currSize;
+                    }
+                } else {
+                    optimalSize = currSize;
+                }
+            }
+        }
+        if(optimalSize == null) {
+            //did not find a size with the correct aspect ratio.. let's choose the smallest instead
+            for (Iterator<Camera.Size> iterator = sizes.iterator(); iterator.hasNext();) {
+                Camera.Size currSize =  iterator.next();
+                if(optimalSize!=null) {
+                    //is the current size smaller than the one before
+                    if(optimalSize.height>currSize.height && optimalSize.width>currSize.width) {
+                        optimalSize = currSize;
+                    } else {
+                        optimalSize = currSize;
+                    }
+                }else {
+                    optimalSize = currSize;
+                }
+
+            }
+        }
+        return optimalSize;
+    }
+
     private int openCamera()
     {
         mCamera = Camera.open(0);
@@ -306,8 +347,17 @@ public class PlayerActivity extends Activity
 
         int r = w/h;
         vWidth = surfaceView.getWidth();
-        vHeight = vWidth / r;
+        vHeight = surfaceView.getHeight();
 
+        debugText(Integer.toString(vWidth) + "x" + Integer.toString(vHeight));
+
+        List<Camera.Size> previewSizes = cp.getSupportedPreviewSizes();
+
+        Camera.Size s = getOptimalPreviewSize(previewSizes, vWidth, vHeight);
+        cp.setPreviewSize(s.width, s.height);
+surfaceHolder.setFixedSize(s.width, s.height);
+        debugText(Integer.toString(s.width) + '/' + Integer.toString(s.height));
+/*
         if (vHeight > surfaceView.getHeight())
         {
             vHeight = surfaceView.getHeight();
@@ -316,16 +366,17 @@ public class PlayerActivity extends Activity
 
         if(w>vWidth || h>vHeight)
         {
+            vWidth = w;
+            vHeight = h;
             cp.setPreviewSize(vWidth,vHeight);
-        }
+        }*/
 
 
         //m.setText(Integer.toString(vWidth) + "x" + Integer.toString(vHeight));
-        surfaceHolder.setFixedSize(vWidth, vHeight);
+        //surfaceHolder.setFixedSize(vWidth, vHeight);
 
         // Important: Call startPreview() to start updating the preview
         // surface. Preview must be started before you can take a picture.
-        //debugText(Integer.toString(vWidth) + "x" + Integer.toString(vHeight));
 
 /*
         try {
@@ -336,10 +387,20 @@ public class PlayerActivity extends Activity
 */
 
         try {
-            mCamera.startPreview();
+            mCamera.setParameters(cp);
         } catch (Exception e) {
             e.printStackTrace();
         }
+
+        try {
+            mCamera.setPreviewDisplay(surfaceHolder);
+            mediaRecorder.setPreviewDisplay(surfaceHolder.getSurface());
+            mCamera.startPreview();
+        } catch (Exception e) {
+            debugText("init_camera: " + e);
+
+        }
+
 
         return 0;
     }
@@ -365,6 +426,8 @@ public class PlayerActivity extends Activity
         if (keepAwake.isChecked())
             getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
+        // TODO KeepAwake should only be active when monitoring or recording
+        // Also, can I turn the screen off and keep recording? Would need to run as service I think. (Or just dim?)
         keepAwake.setOnCheckedChangeListener(new Switch.OnCheckedChangeListener() {
                                                        @Override
                                                        public void onCheckedChanged(CompoundButton buttonView,
@@ -390,12 +453,6 @@ public class PlayerActivity extends Activity
 
         recordFixedLengthSwitch = (CheckBox) findViewById(R.id.recordUntilSilentCheckBox);
 
-
-/*  DEPRECATED
-        TextView mediaUri = (TextView)findViewById(R.id.mediauri);
-        targetUri = this.getIntent().getData();
-        mediaUri.setText(targetUri.toString());
-*/
 
         Button buttonPlayVideo = (Button) findViewById(R.id.playvideoplayer);
         Button buttonPauseVideo = (Button) findViewById(R.id.pausevideoplayer);
