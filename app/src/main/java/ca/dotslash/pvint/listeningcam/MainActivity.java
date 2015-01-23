@@ -25,6 +25,7 @@ import android.os.Handler;
 
 import android.text.format.DateFormat;
 import android.text.method.ScrollingMovementMethod;
+import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
@@ -63,13 +64,14 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     private boolean monitoring = false;
     private boolean isRecording = false;
     private double lastNoiseTime;
+    private int debugCnt = 0;
 
     private ScheduledThreadPoolExecutor sch;
     private int audioMonitorDelay = 100;    // ms
     private Handler handler = new Handler();
 
     private int videoDuration = 1000 * 60;
-    private int vWidth, vHeight;
+    private int vWidth, vHeight, sWidth, sHeight;
     private String currentFile;
 
     private String videoFilePrefix = "LCam_";
@@ -200,7 +202,10 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     }
     @Override
     public void surfaceChanged(SurfaceHolder arg0, int format, int width, int height) {
+        surfaceHolder.setFixedSize(width, height);
         initCamera(width, height);
+        sWidth = width;
+        sHeight = height;
         debugText("SurfaceChanged: " + width + "x" + height);
 
     }
@@ -223,9 +228,8 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         surfaceView = (SurfaceView) findViewById(R.id.surfaceview);
         surfaceHolder = surfaceView.getHolder();
         surfaceHolder.addCallback(this);
-        //surfaceHolder.setFixedSize(videoWidth, videoHeight);
+        surfaceHolder.setFixedSize(surfaceHolder.getSurfaceFrame().width(), surfaceHolder.getSurfaceFrame().height());
         surfaceHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
-
         return true;
     }
 
@@ -237,6 +241,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     }
     private boolean initCamera(int width, int height)
     {
+
         // Prepare the camera
         mCamera = Camera.open();
         if (mCamera == null)
@@ -250,11 +255,23 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         List<Camera.Size> previewSizes = cp.getSupportedPreviewSizes();
 
         Camera.Size s = getOptimalPreviewSize(previewSizes, width, height);
-        cp.setPreviewSize(s.width,s.height);
+
+
+
         vWidth = s.width;
         vHeight = s.height;
 
+/*
+        // FIXME HARDWIRE TEST
+        vWidth = 640;
+        vHeight = 480;
+*/
+
+        cp.setPreviewSize(vWidth,vHeight);
+
+        debugText("InitCamera: " + Integer.toString(vWidth) + "x" + Integer.toString(vHeight));
         mCamera.setParameters(cp);
+
 
         try {
             mCamera.setPreviewDisplay(surfaceHolder);
@@ -264,18 +281,22 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         }
 
 
+
         return true;
     }
 
     private void initRecorder()
     {
         recorder = new MediaRecorder();
-
+        debugText("Initializing recorder... ");
+        mCamera.unlock();
+        debugText("Camera unlocked");
         recorder.setCamera(mCamera);
+        debugText("Camera Set");
         recorder.setAudioSource(MediaRecorder.AudioSource.CAMCORDER);
         recorder.setVideoSource(MediaRecorder.VideoSource.CAMERA);
         recorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
-
+debugText("1");
         DateFormat df = new DateFormat();
         currentFile = videoFilePrefix  + df.format("yyyyMMdd_kkmmss", new java.util.Date()) + ".mp4";
 
@@ -283,7 +304,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         Boolean nf = new File(Environment.getExternalStorageDirectory(), "/" + saveDir).mkdir();
         File tempFile = new File(Environment.getExternalStorageDirectory(), "/" + saveDir + "/" + currentFile);
 
-        int r = vWidth/vHeight;
+        /*int r = vWidth/vHeight;
         vWidth = surfaceView.getWidth();
         vHeight = vWidth / r;
 
@@ -292,14 +313,17 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
             vHeight = surfaceView.getHeight();
             vWidth = vHeight * r;
         }
-
+*/
         //m.setText(Integer.toString(vWidth) + "x" + Integer.toString(vHeight));
-        surfaceHolder.setFixedSize(vWidth, vHeight);  // FIXME
+        //surfaceHolder.setFixedSize(vWidth, vHeight);  // FIXME
         recorder.setOutputFile(tempFile.getPath());
         recorder.setVideoFrameRate(25);
+        debugText("Setting videosize to " + Integer.toString(vWidth) + "x" + Integer.toString(vHeight));
         recorder.setVideoSize(vWidth,vHeight);
         recorder.setAudioEncoder(MediaRecorder.AudioEncoder.DEFAULT);
         recorder.setVideoEncoder(MediaRecorder.VideoEncoder.DEFAULT);
+        recorder.setPreviewDisplay(surfaceHolder.getSurface());
+        debugText("Done");
     }
     public static Camera.Size getOptimalPreviewSize(List<Camera.Size> sizes, int screenWidth, int screenHeight) {
         double epsilon = 0.17;
@@ -319,6 +343,17 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
                 } else {
                     optimalSize = currSize;
                 }
+            }
+            else
+            {
+                if(optimalSize!=null) {
+                    if (optimalSize.height > currSize.height || optimalSize.width > currSize.width)
+                    {
+                        optimalSize = currSize;
+                    }
+                }
+                else
+                    optimalSize = currSize;
             }
         }
         if(optimalSize == null) {
@@ -364,12 +399,19 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         getAudioLevelText.setText(Integer.toString(audioThreshold / audioLevelFactor));
     }
 
+    private void debugText()
+    {
+        String t = Integer.toString(debugCnt);
+        debugCnt++;
+        debugText(t);
+    }
     private void debugText(String t)
     {
         String n;
         TextView tv = (TextView) findViewById(R.id.debugTextView);
         n = (String) tv.getText();
         tv.setText(n + '\n' + t);
+        Log.d("LCam", t);
 
     }
     private void debugTextNoReturn(String t)
@@ -392,6 +434,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 
     private void recordVid()
     {
+        debugText("Starting recordVid()");
         initRecorder();
 
         if (!recordFixedLengthSwitch.isChecked())
@@ -402,7 +445,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         else {
             recorder.setMaxDuration(videoDuration * 2);
         }
-
+        debugText("About to prepare()");
         try {
             recorder.prepare();
         } catch (IOException e) {
@@ -429,6 +472,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 
         debugText("Recording " + currentFile);
         isRecording = true;
+
         recorder.start();
         // show the recording indicator
         // FIXME Deprecated?? showRecording();
@@ -505,8 +549,8 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
                 // TODO: clean up audio recorder!!
                 recorder.stop();
                 isRecording = false;
-                recorder.reset();
-                recorder.release();
+                //recorder.reset();
+                //recorder.release();
 
                 lastNoiseTime = System.currentTimeMillis();
 
