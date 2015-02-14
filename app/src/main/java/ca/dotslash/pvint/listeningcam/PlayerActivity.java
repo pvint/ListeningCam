@@ -25,6 +25,10 @@ import android.os.Handler;
 
 import android.text.format.DateFormat;
 import android.text.method.ScrollingMovementMethod;
+import android.util.Log;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
@@ -76,6 +80,8 @@ public class PlayerActivity extends Activity
     private int videoDuration = 1000 * 60;
     private boolean isRecording = false;
     private boolean firstRun = true;
+    private List<Camera.Size> videoSizes;
+    private Camera.Size videoSize;
 
     private ProgressBar audioLevelBar;
     private SeekBar videoLengthBar;
@@ -84,6 +90,7 @@ public class PlayerActivity extends Activity
     private SeekBar setAudioLevelBar;
     private TextView getAudioLevelText;
     private ImageButton switchCameraButton;
+    private Menu settingsMenu;
 
     private Context ctx;
     private Activity activity;
@@ -112,6 +119,7 @@ public class PlayerActivity extends Activity
         TextView tv = (TextView) findViewById(R.id.debugTextView);
         n = (String) tv.getText();
         tv.setText(n + '\n' + t);
+        Log.d("LCam", t);
 
     }
     private void debugTextNoReturn(String t)
@@ -326,14 +334,14 @@ public class PlayerActivity extends Activity
         return optimalSize;
     }
 
-    private int openCamera()
+    private int openCamera(int width, int height)
     {
-        mCamera = Camera.open(0);
+        mCamera = Camera.open();
         mCamera.lock();
         // Note: must be called when camera is locked
         Camera.Parameters cp = mCamera.getParameters();
 
-        mCamera.unlock();
+
         numCameras = mCamera.getNumberOfCameras();
 
         //List<Camera.Size> localSizes = mCamera.getParameters().getSupportedPreviewSizes();
@@ -351,40 +359,23 @@ public class PlayerActivity extends Activity
 
         debugText(Integer.toString(vWidth) + "x" + Integer.toString(vHeight));
 
+        // Get list of video sizes for settings menu
+        videoSizes = getVideoSizes(cp);
+        videoSize = cp.getPictureSize();
+
+        debugText("videoSize: " + videoSize.width + "x" + videoSize.height);
+        /*
+        for (Iterator<Camera.Size> iterator = videoSizes.iterator(); iterator.hasNext();) {
+            Camera.Size currSize =  iterator.next();
+            Log.d("aaaaa", Integer.toString(currSize.height) + "," + Integer.toString(currSize.width));
+        }*/
+
         List<Camera.Size> previewSizes = cp.getSupportedPreviewSizes();
 
         Camera.Size s = getOptimalPreviewSize(previewSizes, vWidth, vHeight);
         cp.setPreviewSize(s.width, s.height);
-surfaceHolder.setFixedSize(s.width, s.height);
         debugText(Integer.toString(s.width) + '/' + Integer.toString(s.height));
-/*
-        if (vHeight > surfaceView.getHeight())
-        {
-            vHeight = surfaceView.getHeight();
-            vWidth = vHeight * r;
-        }
 
-        if(w>vWidth || h>vHeight)
-        {
-            vWidth = w;
-            vHeight = h;
-            cp.setPreviewSize(vWidth,vHeight);
-        }*/
-
-
-        //m.setText(Integer.toString(vWidth) + "x" + Integer.toString(vHeight));
-        //surfaceHolder.setFixedSize(vWidth, vHeight);
-
-        // Important: Call startPreview() to start updating the preview
-        // surface. Preview must be started before you can take a picture.
-
-/*
-        try {
-            mCamera.setPreviewDisplay(surfaceHolder);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-*/
 
         try {
             mCamera.setParameters(cp);
@@ -401,7 +392,7 @@ surfaceHolder.setFixedSize(s.width, s.height);
 
         }
 
-
+        mCamera.unlock();
         return 0;
     }
     private void prepareSurface()
@@ -414,12 +405,82 @@ surfaceHolder.setFixedSize(s.width, s.height);
         surfaceHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
         mediaPlayer = new MediaPlayer();
     }
+
+    private List<Camera.Size> getVideoSizes(Camera.Parameters params)
+    {
+        List<Camera.Size> sizes = params.getSupportedVideoSizes();
+        if (sizes == null)
+            sizes = params.getSupportedPictureSizes();
+
+
+        return sizes;
+    }
+
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+// Inflate the menu; this adds items to the action bar if it is present.
+        settingsMenu = menu;
+        MenuInflater inflater = getMenuInflater();
+
+        inflater.inflate(R.menu.menu_main, settingsMenu);
+
+/*        int i = 0;
+        if (!videoSizes.isEmpty())
+        {
+            for (Iterator<Camera.Size> iterator = videoSizes.iterator(); iterator.hasNext();) {
+                Camera.Size currSize = iterator.next();
+                //settingsMenu.add(Integer.toString(currSize.width) + "x" + Integer.toString(currSize.height));
+                settingsMenu.add(1,i++,1,Integer.toString(currSize.width) + "x" + Integer.toString(currSize.height));
+            }
+        }*/
+
+        return true;
+    }
+
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        // this works :) settingsMenu.add("ZXZXZX");
+        int i = 0;
+        int group = 1;
+        if (!videoSizes.isEmpty()) {
+            settingsMenu.removeGroup(group);
+            for (Iterator<Camera.Size> iterator = videoSizes.iterator(); iterator.hasNext(); ) {
+                Camera.Size currSize = iterator.next();
+                //settingsMenu.add(Integer.toString(currSize.width) + "x" + Integer.toString(currSize.height));
+                settingsMenu.add(group, i++, 1, Integer.toString(currSize.width) + "x" + Integer.toString(currSize.height));
+
+                if (currSize.width == videoSize.width && currSize.height == videoSize.height) {
+                    MenuItem mi = settingsMenu.getItem(i - 1);
+                    mi.setChecked(true);
+                }
+            }
+            settingsMenu.setGroupCheckable(group, true, true);
+        }
+
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // Handle item selection
+        // find number of resolutions available, checked one will be index
+        videoSize = videoSizes.get(item.getItemId());
+
+        debugText("Selected: " + Integer.toString(videoSize.width) + "x" + Integer.toString(videoSize.height));
+        return true;
+        //return super.onOptionsItemSelected(item);
+
+    }
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         // TODO Auto-generated method stub
         super.onCreate(savedInstanceState);
         //setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_NOSENSOR | ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         setContentView(R.layout.main_layout);
+
 
         keepAwake = (CheckBox) findViewById(R.id.keepAwakeCheckBox);
 
@@ -503,7 +564,7 @@ surfaceHolder.setFixedSize(s.width, s.height);
         // prepare recorder
 
         prepareSurface();
-        openCamera();
+//openCamera(0,0);
 
         // FIXME Not working!!  startCameraPreview();
 
@@ -768,11 +829,12 @@ surfaceHolder.setFixedSize(s.width, s.height);
             vWidth = vHeight * r;
         }
 
-        //m.setText(Integer.toString(vWidth) + "x" + Integer.toString(vHeight));
-        surfaceHolder.setFixedSize(videoWidth, videoHeight);  // FIXME
+        debugText("Resolution:" + videoSize.width + "x" + videoSize.height);
+
+        surfaceHolder.setFixedSize(videoSize.width, videoSize.height);  // FIXME
         recorder.setOutputFile(tempFile.getPath());
         recorder.setVideoFrameRate(25);
-        recorder.setVideoSize(videoWidth, videoHeight);
+        recorder.setVideoSize(videoSize.width, videoSize.height);
         recorder.setAudioEncoder(MediaRecorder.AudioEncoder.DEFAULT);
         recorder.setVideoEncoder(MediaRecorder.VideoEncoder.DEFAULT);
         recorder.setPreviewDisplay(surfaceHolder.getSurface());
@@ -855,8 +917,9 @@ surfaceHolder.setFixedSize(s.width, s.height);
     }
 
     @Override
-    public void surfaceChanged(SurfaceHolder arg0, int arg1, int arg2, int arg3) {
-        // TODO Auto-generated method stub
+    public void surfaceChanged(SurfaceHolder arg0, int arg1, int w, int h) {
+        surfaceHolder.setFixedSize(w, h);
+        openCamera(w,h);
 
     }
 
